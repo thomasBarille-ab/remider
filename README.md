@@ -74,18 +74,6 @@ Ce projet est construit avec les dernières technologies du web moderne :
 
 ---
 
-## 🤝 Contribuer
-
-Les contributions sont les bienvenues ! Si vous avez des idées pour améliorer l'application (voir la roadmap dans `GEMINI.md`), n'hésitez pas à :
-
-1.  Forker le projet.
-2.  Créer une branche pour votre fonctionnalité (`git checkout -b feature/AmazingFeature`).
-3.  Commit vos changements (`git commit -m 'Add some AmazingFeature'`).
-4.  Push vers la branche (`git push origin feature/AmazingFeature`).
-5.  Ouvrir une Pull Request.
-
----
-
 ## 📄 Licence
 
 Distribué sous la licence MIT. Voir `LICENSE` pour plus d'informations.
