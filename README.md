@@ -71,9 +71,3 @@ Ce projet est construit avec les dernières technologies du web moderne :
     ```
 
 4.  Ouvrez [http://localhost:3000](http://localhost:3000) dans votre navigateur.
-
----
-
-## 📄 Licence
-
-Distribué sous la licence MIT. Voir `LICENSE` pour plus d'informations.
