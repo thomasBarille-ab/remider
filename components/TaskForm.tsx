@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useStore } from "@/store/useStore";
-import { Category } from "@/types";
-import { Plus, Bell, Calendar, Clock, Tag, Hourglass, Settings2, Repeat } from "lucide-react";
+import { Category, Priority } from "@/types";
+import { Plus, Bell, Calendar, Clock, Tag, Hourglass, Settings2, Repeat, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CategoryManager } from "./CategoryManager";
 import { generateRoutineTasks, RecurrenceType } from "@/lib/routineLogic";
@@ -15,6 +15,7 @@ export function TaskForm() {
   // Set default category to the first one available or fallback if empty
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<Category>(categories[0]?.id || "");
+  const [priority, setPriority] = useState<Priority>("medium");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [reminder, setReminder] = useState("none");
@@ -47,6 +48,7 @@ export function TaskForm() {
   const resetForm = () => {
     setTitle("");
     setCategory(categories[0]?.id || "");
+    setPriority("medium");
     setDate("");
     setTime("");
     setReminder("none");
@@ -71,6 +73,8 @@ export function TaskForm() {
       id: crypto.randomUUID(),
       title,
       category,
+      priority,
+      subtasks: [],
       date: dateTime,
       isCompleted: false,
       reminderTime: reminder === "none" ? undefined : calculateReminder(dateTime, reminder),
@@ -157,34 +161,61 @@ export function TaskForm() {
               />
             </div>
 
-            {/* Categories */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                  <Tag className="w-3 h-3" /> Category
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsManagingCategories(true)}
-                  className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-medium"
-                >
-                  <Settings2 className="w-3 h-3" /> Manage
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((cat) => (
+            {/* Categories & Priority */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                    <Tag className="w-3 h-3" /> Category
+                  </label>
                   <button
-                    key={cat.id}
                     type="button"
-                    onClick={() => setCategory(cat.id)}
-                    className={cn(
-                      "px-3 py-1.5 rounded-lg text-sm font-medium border transition-all",
-                      category === cat.id ? cat.color + " ring-2 ring-offset-1 ring-indigo-200" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                    )}
+                    onClick={() => setIsManagingCategories(true)}
+                    className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-medium"
                   >
-                    {cat.label}
+                    <Settings2 className="w-3 h-3" /> Manage
                   </button>
-                ))}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setCategory(cat.id)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-sm font-medium border transition-all",
+                        category === cat.id ? cat.color + " ring-2 ring-offset-1 ring-indigo-200" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                      )}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                  <Flag className="w-3 h-3" /> Priority
+                </label>
+                <div className="flex gap-2">
+                  {(["low", "medium", "high"] as Priority[]).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setPriority(p)}
+                      className={cn(
+                        "flex-1 py-1.5 rounded-lg text-sm font-medium border transition-all capitalize",
+                        priority === p 
+                          ? p === "high" ? "bg-red-100 text-red-700 border-red-200" 
+                            : p === "medium" ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                            : "bg-blue-100 text-blue-700 border-blue-200"
+                          : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                      )}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 

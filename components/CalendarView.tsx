@@ -22,10 +22,13 @@ import { TaskDetailModal } from "./TaskDetailModal";
 export function CalendarView() {
   const tasks = useStore((state) => state.tasks);
   const categories = useStore((state) => state.categories);
+  const searchQuery = useStore((state) => state.searchQuery);
   const toggleTask = useStore((state) => state.toggleTask);
   const updateTask = useStore((state) => state.updateTask);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  const filteredTasks = tasks.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(monthStart);
@@ -68,90 +71,173 @@ export function CalendarView() {
     }
   };
 
-  return (
-    <>
-      <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden flex flex-col h-[600px]">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-800">
-            {format(currentDate, "MMMM yyyy")}
-          </h2>
-          <div className="flex items-center gap-2">
-            <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-full transition">
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-full transition">
-              <ChevronRight className="w-5 h-5 text-gray-600" />
-            </button>
-          </div>
-        </div>
+    return (
 
-        {/* Weekday Headers */}
-        <div className="grid grid-cols-7 bg-gray-50 border-b border-gray-100">
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-            <div key={day} className="py-2 text-center text-sm font-semibold text-gray-500">
-              {day}
+      <>
+
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-md border border-gray-100 dark:border-gray-800 overflow-hidden flex flex-col h-[600px]">
+
+          {/* Header */}
+
+          <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-800">
+
+            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
+
+              {format(currentDate, "MMMM yyyy")}
+
+            </h2>
+
+            <div className="flex items-center gap-2">
+
+              <button onClick={prevMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition">
+
+                <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+
+              </button>
+
+              <button onClick={nextMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition">
+
+                <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+
+              </button>
+
             </div>
-          ))}
-        </div>
 
-        {/* Days Grid */}
-        <div className="grid grid-cols-7 flex-1 auto-rows-fr">
-          {calendarDays.map((day) => {
-            const dayTasks = tasks.filter((task) => isSameDay(new Date(task.date), day));
-            const isCurrentMonth = isSameMonth(day, monthStart);
+          </div>
 
-            return (
-              <div
-                key={day.toISOString()}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, day)}
-                className={cn(
-                  "min-h-[80px] p-2 border-r border-b border-gray-100 transition hover:bg-gray-50 flex flex-col gap-1",
-                  !isCurrentMonth && "bg-gray-50/50 text-gray-400"
-                )}
-              >
-                <div className="flex justify-between items-start">
-                  <span className={cn(
-                    "text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full",
-                    isSameDay(day, new Date()) ? "bg-indigo-600 text-white" : "text-gray-700"
-                  )}>
-                    {format(day, "d")}
-                  </span>
-                </div>
-                
-                <div className="flex-1 flex flex-col gap-1 overflow-y-auto max-h-[100px] no-scrollbar">
-                  {dayTasks.map((task) => (
-                    <button
-                      key={task.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, task.id)}
-                      onClick={() => toggleTask(task.id)}
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        setEditingTask(task);
-                      }}
-                      className={cn(
-                        "text-xs text-left px-2 py-1 rounded truncate flex items-center gap-1 group border cursor-grab active:cursor-grabbing",
-                        task.isCompleted 
-                          ? "bg-gray-100 text-gray-400 line-through border-transparent" 
-                          : getCategoryColor(task.category)
-                      )}
-                      title={task.title}
-                    >
-                      {task.isCompleted ? <CheckCircle2 className="w-3 h-3 shrink-0" /> : <Circle className="w-3 h-3 shrink-0" />}
-                      <span className="truncate">{task.title}</span>
-                      {task.durationMinutes && (
-                        <span className="ml-1 text-gray-500 text-[10px] whitespace-nowrap">({Math.floor(task.durationMinutes / 60)}h {task.durationMinutes % 60}m)</span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+  
+
+          {/* Weekday Headers */}
+
+          <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800">
+
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+
+              <div key={day} className="py-2 text-center text-sm font-semibold text-gray-500 dark:text-gray-400">
+
+                {day}
+
               </div>
-            );
-          })}
+
+            ))}
+
+          </div>
+
+  
+
+          {/* Days Grid */}
+
+          <div className="grid grid-cols-7 flex-1 auto-rows-fr">
+
+            {calendarDays.map((day) => {
+
+              const dayTasks = filteredTasks.filter((task) => isSameDay(new Date(task.date), day));
+
+              const isCurrentMonth = isSameMonth(day, monthStart);
+
+  
+
+              return (
+
+                <div
+
+                  key={day.toISOString()}
+
+                  onDragOver={handleDragOver}
+
+                  onDrop={(e) => handleDrop(e, day)}
+
+                  className={cn(
+
+                    "min-h-[80px] p-2 border-r border-b border-gray-100 dark:border-gray-800 transition hover:bg-gray-50 dark:hover:bg-gray-800/30 flex flex-col gap-1",
+
+                    !isCurrentMonth && "bg-gray-50/50 dark:bg-gray-900/50 text-gray-400 dark:text-gray-600"
+
+                  )}
+
+                >
+
+                  <div className="flex justify-between items-start">
+
+                    <span className={cn(
+
+                      "text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full",
+
+                      isSameDay(day, new Date()) ? "bg-indigo-600 text-white" : "text-gray-700 dark:text-gray-300"
+
+                    )}>
+
+                      {format(day, "d")}
+
+                    </span>
+
+                  </div>
+
+                  
+
+                  <div className="flex-1 flex flex-col gap-1 overflow-y-auto max-h-[100px] no-scrollbar">
+
+                    {dayTasks.map((task) => (
+
+                      <button
+
+                        key={task.id}
+
+                        draggable
+
+                        onDragStart={(e) => handleDragStart(e, task.id)}
+
+                        onClick={() => toggleTask(task.id)}
+
+                        onDoubleClick={(e) => {
+
+                          e.stopPropagation();
+
+                          setEditingTask(task);
+
+                        }}
+
+                        className={cn(
+
+                          "text-xs text-left px-2 py-1 rounded truncate flex items-center gap-1 group border cursor-grab active:cursor-grabbing",
+
+                          task.isCompleted 
+
+                            ? "bg-gray-100 dark:bg-gray-800 text-gray-400 line-through border-transparent" 
+
+                            : getCategoryColor(task.category)
+
+                        )}
+
+                        title={task.title}
+
+                      >
+
+                        {task.isCompleted ? <CheckCircle2 className="w-3 h-3 shrink-0" /> : <Circle className="w-3 h-3 shrink-0" />}
+
+                        <span className="truncate">{task.title}</span>
+
+                        {task.durationMinutes && (
+
+                          <span className="ml-1 text-gray-500 text-[10px] whitespace-nowrap">({Math.floor(task.durationMinutes / 60)}h {task.durationMinutes % 60}m)</span>
+
+                        )}
+
+                      </button>
+
+                    ))}
+
+                  </div>
+
+                </div>
+
+              );
+
+            })}
+
+          </div>
+
         </div>
-      </div>
 
       {editingTask && (
         <TaskDetailModal 

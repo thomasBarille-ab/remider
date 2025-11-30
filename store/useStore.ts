@@ -10,12 +10,16 @@ interface AppState {
   addTask: (task: Task) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   removeTask: (id: string) => void;
+  removeRoutineTasks: (routineId: string) => void;
   toggleTask: (id: string) => void;
   
   addCategory: (category: CategoryItem) => void;
   updateCategory: (id: string, updates: Partial<CategoryItem>) => void;
   removeCategory: (id: string) => void;
   
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+
   setSuggestions: (suggestions: Suggestion[]) => void;
   acceptSuggestion: (suggestion: Suggestion) => void;
   rejectSuggestion: (id: string) => void;
@@ -48,6 +52,10 @@ export const useStore = create<AppState>()(
         tasks: state.tasks.filter((t) => t.id !== id),
       })),
 
+      removeRoutineTasks: (routineId) => set((state) => ({
+        tasks: state.tasks.filter((t) => t.routineId !== routineId),
+      })),
+
       toggleTask: (id) => set((state) => ({
         tasks: state.tasks.map((t) => 
           t.id === id ? { ...t, isCompleted: !t.isCompleted } : t
@@ -66,6 +74,9 @@ export const useStore = create<AppState>()(
         categories: state.categories.filter((c) => c.id !== id),
       })),
 
+      searchQuery: "",
+      setSearchQuery: (query) => set({ searchQuery: query }),
+
       setSuggestions: (suggestions) => set({ suggestions }),
 
       acceptSuggestion: (suggestion) => set((state) => ({
@@ -75,6 +86,8 @@ export const useStore = create<AppState>()(
             id: crypto.randomUUID(),
             title: suggestion.title,
             category: suggestion.category,
+            priority: "medium", // Default priority
+            subtasks: [],
             date: suggestion.suggestedDate,
             isCompleted: false,
             reminderTime: undefined,

@@ -7,12 +7,16 @@ import { Sparkles, Check, X, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 
 import { Statistics } from "./Statistics";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, Plus, Calendar } from "lucide-react";
+import { TaskCreationModal } from "./TaskCreationModal";
+import { CalendarManager } from "./CalendarManager";
 
 export function SmartReview() {
   const { tasks, suggestions, categories, setSuggestions, acceptSuggestion, rejectSuggestion } = useStore();
   const [isOpen, setIsOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
   // Simulate "Sunday Night" check or just allow manual trigger
   const checkForSuggestions = () => {
@@ -48,21 +52,43 @@ export function SmartReview() {
               if (hasSuggestions) setIsOpen(true);
               else checkForSuggestions();
             }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1 rounded-lg text-sm font-medium transition shadow-sm"
           >
             {hasSuggestions ? `Review ${suggestions.length} Suggestions` : "Generate Plan"}
           </button>
         </div>
 
+        {/* Calendar Import Button */}
+        <button
+          onClick={() => setIsCalendarModalOpen(true)}
+          className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 rounded-xl flex flex-col items-center justify-center gap-1 min-w-[80px] transition shadow-sm"
+          title="Import Calendar"
+        >
+          <Calendar className="w-5 h-5 text-gray-500" />
+          <span className="text-xs font-semibold">Import</span>
+        </button>
+
         {/* Stats Button */}
         <button
           onClick={() => setIsStatsOpen(true)}
-          className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 rounded-xl flex flex-col items-center justify-center gap-1 min-w-[100px] transition shadow-sm"
+          className="flex-1 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-1 rounded-xl flex flex-col items-center justify-center gap-1 transition shadow-sm"
         >
-          <BarChart3 className="w-5 h-5 text-gray-500" />
+          <BarChart3 className="w-5 h-5" />
           <span className="text-xs font-semibold">Statistics</span>
         </button>
+
+        {/* Add Task Button */}
+        <button
+          onClick={() => setIsTaskModalOpen(true)}
+          className="flex-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1 rounded-xl flex flex-col items-center justify-center gap-1 transition shadow-sm"
+        >
+          <Plus className="w-5 h-5" />
+          <span className="text-xs font-semibold">Add Task</span>
+        </button>
       </div>
+
+      <TaskCreationModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} />
+      <CalendarManager isOpen={isCalendarModalOpen} onClose={() => setIsCalendarModalOpen(false)} />
 
       {/* Statistics Modal */}
       {isStatsOpen && (
