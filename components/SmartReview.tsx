@@ -7,9 +7,8 @@ import { Sparkles, Check, X, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 
 import { Statistics } from "./Statistics";
-import { BarChart3, Plus, Calendar, StickyNote } from "lucide-react";
+import { BarChart3, Plus, StickyNote } from "lucide-react";
 import { TaskCreationModal } from "./TaskCreationModal";
-import { CalendarManager } from "./CalendarManager";
 import { NoteModal } from "./NoteModal";
 
 export function SmartReview() {
@@ -17,7 +16,6 @@ export function SmartReview() {
   const [isOpen, setIsOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
 
   // Simulate "Sunday Night" check or just allow manual trigger
@@ -60,16 +58,6 @@ export function SmartReview() {
           </button>
         </div>
 
-        {/* Calendar Import Button */}
-        <button
-          onClick={() => setIsCalendarModalOpen(true)}
-          className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 rounded-xl flex flex-col items-center justify-center gap-1 min-w-[80px] transition shadow-sm"
-          title="Import Calendar"
-        >
-          <Calendar className="w-5 h-5 text-gray-500" />
-          <span className="text-xs font-semibold">Import</span>
-        </button>
-
         {/* Stats Button */}
         <button
           onClick={() => setIsStatsOpen(true)}
@@ -99,7 +87,6 @@ export function SmartReview() {
       </div>
 
       <TaskCreationModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} />
-      <CalendarManager isOpen={isCalendarModalOpen} onClose={() => setIsCalendarModalOpen(false)} />
       
       {isNoteModalOpen && (
         <NoteModal onClose={() => setIsNoteModalOpen(false)} />

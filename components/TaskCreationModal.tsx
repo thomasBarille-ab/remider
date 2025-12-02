@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useStore } from "@/store/useStore";
-import { Category, Priority } from "@/types";
+import { Category, Priority, Task } from "@/types";
 import { Plus, Bell, Calendar, Clock, Tag, Hourglass, Settings2, Repeat, Flag, X, Save, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CategoryManager } from "./CategoryManager";
@@ -122,9 +122,9 @@ export function TaskCreationModal({ isOpen, onClose }: TaskCreationModalProps) {
       category,
       priority,
       subtasks: [],
-      date: dateTime,
+      date: dateTime, // dateTime is already an ISO string here
       isCompleted: false,
-      reminderTime: reminder === "none" ? undefined : calculateReminder(dateTime, reminder),
+      reminderTime: reminder === "none" ? undefined : calculateReminder(dateTime, reminder), // calculateReminder returns Date | undefined, needs to be ISO string
       durationMinutes: totalDuration > 0 ? totalDuration : undefined,
     };
 

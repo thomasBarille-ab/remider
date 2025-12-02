@@ -10,9 +10,9 @@ export interface RecurrenceSettings {
   endDate?: string; // Optional end date for the routine
 }
 
-export function generateRoutineTasks(baseTask: Task, settings: RecurrenceSettings, monthsToGenerate = 3): Task[] {
+export function generateRoutineTasks(baseTask: Partial<Task>, settings: RecurrenceSettings, monthsToGenerate = 3): Task[] {
   const tasks: Task[] = [];
-  const startDate = new Date(baseTask.date);
+  const startDate = new Date(baseTask.date!);
   // Limit generation to X months in the future to keep store light
   // In a real app, you'd generate these lazily or on the backend
   const limitDate = new Date();
@@ -41,23 +41,19 @@ export function generateRoutineTasks(baseTask: Task, settings: RecurrenceSetting
     }
 
     if (shouldAdd) {
-      // Don't duplicate the very first task if it's already added by the main logic, 
-      // BUT here we will return a list of ALL tasks including the first one, 
-      // and let the caller handle it. Actually, simpler: caller adds the returned list.
-      
       const newTaskDate = new Date(currentDate);
       // Preserve the time from the base task
-      const baseTime = new Date(baseTask.date);
+      const baseTime = new Date(baseTask.date!);
       newTaskDate.setHours(baseTime.getHours(), baseTime.getMinutes(), 0, 0);
 
       tasks.push({
-        ...baseTask,
+        ...baseTask as Task,
         id: crypto.randomUUID(),
-        date: newTaskDate.toISOString(),
+        date: newTaskDate,
         routineId: routineId,
         // Recalculate reminder for this specific date if it exists
         reminderTime: baseTask.reminderTime 
-          ? calculateNewReminder(newTaskDate, new Date(baseTask.date), new Date(baseTask.reminderTime)) 
+          ? calculateNewReminder(newTaskDate, new Date(baseTask.date!), new Date(baseTask.reminderTime)) 
           : undefined
       });
     }
@@ -76,7 +72,7 @@ export function generateRoutineTasks(baseTask: Task, settings: RecurrenceSetting
   return tasks;
 }
 
-function calculateNewReminder(newTaskDate: Date, originalTaskDate: Date, originalReminder: Date): string {
+function calculateNewReminder(newTaskDate: Date, originalTaskDate: Date, originalReminder: Date): Date {
   const diff = originalTaskDate.getTime() - originalReminder.getTime();
-  return new Date(newTaskDate.getTime() - diff).toISOString();
+  return new Date(newTaskDate.getTime() - diff);
 }
