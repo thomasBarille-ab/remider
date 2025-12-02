@@ -109,16 +109,15 @@ export function TaskCreationModal({ isOpen, onClose }: TaskCreationModalProps) {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !date) return;
 
     const dateTimeString = time ? `${date}T${time}` : `${date}T09:00`; 
-    const dateTime = new Date(dateTimeString).toISOString();
+    const dateTime = new Date(dateTimeString);
     const totalDuration = durationHours * 60 + durationMinutes;
 
     const baseTask = {
-      id: crypto.randomUUID(),
       title,
       category,
       priority,
@@ -135,21 +134,23 @@ export function TaskCreationModal({ isOpen, onClose }: TaskCreationModalProps) {
         intervalDays: recurrenceType === "interval" ? intervalDays : undefined,
         weekDays: recurrenceType === "weekly" ? selectedWeekDays : undefined,
       });
-      routineTasks.forEach(task => addTask(task));
+      // Add tasks one by one asynchronously
+      for (const task of routineTasks) {
+        await addTask(task);
+      }
     } else {
-      addTask(baseTask);
+      await addTask(baseTask);
     }
 
     resetForm();
     onClose();
   };
 
-  const calculateReminder = (taskDateIso: string, type: string) => {
-    const taskDate = new Date(taskDateIso);
+  const calculateReminder = (taskDate: Date, type: string): Date | undefined => {
     switch (type) {
-      case "15m": return new Date(taskDate.getTime() - 15 * 60000).toISOString();
-      case "1h": return new Date(taskDate.getTime() - 60 * 60000).toISOString();
-      case "1d": return new Date(taskDate.getTime() - 24 * 60 * 60000).toISOString();
+      case "15m": return new Date(taskDate.getTime() - 15 * 60000);
+      case "1h": return new Date(taskDate.getTime() - 60 * 60000);
+      case "1d": return new Date(taskDate.getTime() - 24 * 60 * 60000);
       default: return undefined;
     }
   };

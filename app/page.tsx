@@ -5,24 +5,33 @@ import { useStore } from "@/store/useStore";
 import { CalendarView } from "@/components/CalendarView";
 import { ListView } from "@/components/ListView";
 import { KanbanView } from "@/components/KanbanView";
+import { NotesView } from "@/components/NotesView";
 import { SmartReview } from "@/components/SmartReview";
 import { useReminder } from "@/hooks/useReminder";
-import { LayoutGrid, List, Kanban, Search, Moon, Sun } from "lucide-react";
+import { LayoutGrid, List, Kanban, Search, Moon, Sun, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UserButton, useAuth } from "@clerk/nextjs";
+import { getTasks } from "@/app/actions/taskActions";
+import { getNotes } from "@/app/actions/noteActions";
+import { getCategories } from "@/app/actions/categoryActions";
 
-type ViewMode = "calendar" | "list" | "kanban";
+type ViewMode = "calendar" | "list" | "kanban" | "notes";
 
 export default function Home() {
   useReminder();
+  const { isSignedIn } = useAuth();
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const searchQuery = useStore((state) => state.searchQuery);
   const setSearchQuery = useStore((state) => state.setSearchQuery);
+  const setTasks = useStore((state) => state.setTasks);
+  const setNotes = useStore((state) => state.setNotes);
+  const setCategories = useStore((state) => state.setCategories);
   
   // Theme State
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
-    // Check local storage or preference
+    // Initial theme setup (can be stored in DB later per user)
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme === "dark") {
       setTheme("dark");
@@ -33,15 +42,41 @@ export default function Home() {
     }
   }, []);
 
+  useEffect(() => {
+    if (isSignedIn) {
+      const fetchData = async () => {
+        try {
+          const fetchedTasks = await getTasks();
+          setTasks(fetchedTasks);
+
+          const fetchedNotes = await getNotes();
+          setNotes(fetchedNotes);
+
+          const fetchedCategories = await getCategories();
+          setCategories(fetchedCategories);
+
+        } catch (error) {
+          console.error("Failed to fetch initial data:", error);
+        }
+      };
+      fetchData();
+    } else {
+      // Clear data if user logs out
+      setTasks([]);
+      setNotes([]);
+      setCategories([]);
+    }
+  }, [isSignedIn, setTasks, setNotes, setCategories]);
+
   const toggleTheme = () => {
     if (theme === "light") {
       setTheme("dark");
       document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
+      localStorage.setItem("theme", "dark"); // Still using localStorage for theme for now
     } else {
       setTheme("light");
       document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
+      localStorage.setItem("theme", "light"); // Still using localStorage for theme for now
     }
   };
 
@@ -105,6 +140,16 @@ export default function Home() {
               >
                 <Kanban className="w-5 h-5" />
               </button>
+              <button
+                onClick={() => setViewMode("notes")}
+                className={cn(
+                  "p-2 rounded-lg transition-all",
+                  viewMode === "notes" ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm" : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                )}
+                title="Notes View"
+              >
+                <StickyNote className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Dark Mode Toggle */}
@@ -114,6 +159,9 @@ export default function Home() {
             >
               {theme === "light" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             </button>
+
+            {/* User Profile */}
+            <UserButton afterSignOutUrl="/sign-in" />
           </div>
         </header>
 
@@ -125,6 +173,7 @@ export default function Home() {
             {viewMode === "calendar" && <CalendarView />}
             {viewMode === "list" && <ListView />}
             {viewMode === "kanban" && <KanbanView />}
+            {viewMode === "notes" && <NotesView />}
         </div>
       </div>
     </main>

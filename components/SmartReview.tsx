@@ -7,9 +7,10 @@ import { Sparkles, Check, X, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 
 import { Statistics } from "./Statistics";
-import { BarChart3, Plus, Calendar } from "lucide-react";
+import { BarChart3, Plus, Calendar, StickyNote } from "lucide-react";
 import { TaskCreationModal } from "./TaskCreationModal";
 import { CalendarManager } from "./CalendarManager";
+import { NoteModal } from "./NoteModal";
 
 export function SmartReview() {
   const { tasks, suggestions, categories, setSuggestions, acceptSuggestion, rejectSuggestion } = useStore();
@@ -17,6 +18,7 @@ export function SmartReview() {
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
 
   // Simulate "Sunday Night" check or just allow manual trigger
   const checkForSuggestions = () => {
@@ -77,6 +79,15 @@ export function SmartReview() {
           <span className="text-xs font-semibold">Statistics</span>
         </button>
 
+        {/* Add Note Button */}
+        <button
+          onClick={() => setIsNoteModalOpen(true)}
+          className="flex-1 bg-white border border-gray-200 hover:bg-gray-50 text-indigo-600 px-4 py-1 rounded-xl flex flex-col items-center justify-center gap-1 transition shadow-sm"
+        >
+          <StickyNote className="w-5 h-5" />
+          <span className="text-xs font-semibold">Add Note</span>
+        </button>
+
         {/* Add Task Button */}
         <button
           onClick={() => setIsTaskModalOpen(true)}
@@ -89,6 +100,10 @@ export function SmartReview() {
 
       <TaskCreationModal isOpen={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} />
       <CalendarManager isOpen={isCalendarModalOpen} onClose={() => setIsCalendarModalOpen(false)} />
+      
+      {isNoteModalOpen && (
+        <NoteModal onClose={() => setIsNoteModalOpen(false)} />
+      )}
 
       {/* Statistics Modal */}
       {isStatsOpen && (

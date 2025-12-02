@@ -55,19 +55,19 @@ export function CalendarView() {
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, targetDate: Date) => {
+  const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData("taskId");
     const task = tasks.find((t) => t.id === taskId);
     
     if (task) {
       // Preserve the original time, but change the date
-      const originalDate = new Date(task.date);
+      const originalDate = task.date;
       const newDate = new Date(targetDate);
       newDate.setHours(originalDate.getHours());
       newDate.setMinutes(originalDate.getMinutes());
       
-      updateTask(taskId, { date: newDate.toISOString() });
+      await updateTask(taskId, { date: newDate });
     }
   };
 

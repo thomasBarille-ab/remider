@@ -36,11 +36,11 @@ export function KanbanView() {
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: React.DragEvent, priority: Priority) => {
+  const handleDrop = async (e: React.DragEvent, priority: Priority) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData("taskId");
     if (taskId) {
-      updateTask(taskId, { priority });
+      await updateTask(taskId, { priority });
     }
   };
 

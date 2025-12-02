@@ -22,7 +22,7 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const taskDate = new Date(task.date);
+  const taskDate = task.date;
   const [title, setTitle] = useState(task.title);
   const [category, setCategory] = useState(task.category);
   const [priority, setPriority] = useState<Priority>(task.priority || "medium");
@@ -62,8 +62,8 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
   // Helper to parse existing reminder
   const getInitialReminderValue = () => {
     if (!task.reminderTime) return "none";
-    const taskTime = new Date(task.date).getTime();
-    const reminderTime = new Date(task.reminderTime).getTime();
+    const taskTime = task.date.getTime();
+    const reminderTime = task.reminderTime.getTime();
     const diff = taskTime - reminderTime;
     
     if (Math.abs(diff - 15 * 60000) < 1000) return "15m";
@@ -74,31 +74,31 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
 
   const [reminder, setReminder] = useState(getInitialReminderValue());
 
-  const calculateReminder = (taskDateIso: string, type: string) => {
-    const taskDate = new Date(taskDateIso);
+  const calculateReminder = (taskDate: Date, type: string): Date | undefined => {
     switch (type) {
-      case "15m": return new Date(taskDate.getTime() - 15 * 60000).toISOString();
-      case "1h": return new Date(taskDate.getTime() - 60 * 60000).toISOString();
-      case "1d": return new Date(taskDate.getTime() - 24 * 60 * 60000).toISOString();
+      case "15m": return new Date(taskDate.getTime() - 15 * 60000);
+      case "1h": return new Date(taskDate.getTime() - 60 * 60000);
+      case "1d": return new Date(taskDate.getTime() - 24 * 60 * 60000);
       default: return undefined;
     }
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !date) return;
 
     const dateTimeString = time ? `${date}T${time}` : `${date}T09:00`;
-    const dateTime = new Date(dateTimeString).toISOString();
+    const newDateTime = new Date(dateTimeString);
     const totalDuration = durationHours * 60 + durationMinutes;
 
-    updateTask(task.id, {
+    await updateTask(task.id, {
       title,
       category,
       priority,
-      subtasks,
-      date: dateTime,
-      reminderTime: reminder === "none" ? undefined : calculateReminder(dateTime, reminder),
+      subtasks, // Subtasks are updated directly via the state for now. 
+                // If subtasks needed their own server actions, this would be more complex.
+      date: newDateTime,
+      reminderTime: reminder === "none" ? undefined : calculateReminder(newDateTime, reminder),
       durationMinutes: totalDuration > 0 ? totalDuration : undefined,
     });
     onClose();
@@ -108,27 +108,28 @@ export function TaskDetailModal({ task, onClose }: TaskDetailModalProps) {
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDeleteSingle = () => {
-    removeTask(task.id);
+  const handleConfirmDeleteSingle = async () => {
+    await removeTask(task.id);
     setIsDeleteModalOpen(false);
     onClose();
   };
 
-  const handleConfirmDeleteRoutine = () => {
+  const handleConfirmDeleteRoutine = async () => {
     if (task.routineId) {
-      removeRoutineTasks(task.routineId);
+      await removeRoutineTasks(task.routineId);
     }
     setIsDeleteModalOpen(false);
     onClose();
   };
 
-  const handleDuplicate = () => {
-    addTask({
+  const handleDuplicate = async () => {
+    await addTask({
       ...task,
-      id: crypto.randomUUID(),
       title: `${task.title} (Copy)`,
       isCompleted: false, 
-      subtasks: task.subtasks?.map(s => ({ ...s, id: crypto.randomUUID(), isCompleted: false })) || []
+      subtasks: task.subtasks?.map(s => ({ ...s, id: crypto.randomUUID(), isCompleted: false })) || [],
+      date: new Date(task.date), // Ensure it's a new Date object for creation
+      reminderTime: task.reminderTime ? new Date(task.reminderTime) : undefined, // Ensure it's a new Date object
     });
     onClose();
   };

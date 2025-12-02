@@ -32,12 +32,11 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
   const [editName, setEditName] = useState("");
   const [editColor, setEditColor] = useState("");
 
-  const handleAddCategory = (e: React.FormEvent) => {
+  const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
 
-    addCategory({
-      id: crypto.randomUUID(),
+    await addCategory({
       label: newCategoryName.trim(),
       color: selectedColor,
     });
@@ -50,9 +49,9 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
     setEditColor(cat.color);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (editingId && editName.trim()) {
-      updateCategory(editingId, {
+      await updateCategory(editingId, {
         label: editName.trim(),
         color: editColor
       });
@@ -173,7 +172,7 @@ export function CategoryManager({ onClose }: { onClose: () => void }) {
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => removeCategory(cat.id)}
+                          onClick={async () => await removeCategory(cat.id)}
                           className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                           title="Delete category"
                         >

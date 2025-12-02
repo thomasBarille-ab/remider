@@ -1,108 +1,220 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { Task, Suggestion, CategoryItem } from '@/types';
+import { Task, Suggestion, CategoryItem, Note } from '@/types';
+import { createTask, updateTask, deleteTask, removeRoutineTasks as removeRoutineTasksAction } from '@/app/actions/taskActions';
+import { createNote, updateNote, deleteNote } from '@/app/actions/noteActions';
+import { createCategory, updateCategory as updateCategoryAction, deleteCategory } from '@/app/actions/categoryActions';
 
 interface AppState {
   tasks: Task[];
   suggestions: Suggestion[];
   categories: CategoryItem[];
+  notes: Note[];
   
-  addTask: (task: Task) => void;
-  updateTask: (id: string, updates: Partial<Task>) => void;
-  removeTask: (id: string) => void;
-  removeRoutineTasks: (routineId: string) => void;
-  toggleTask: (id: string) => void;
+  setTasks: (tasks: Task[]) => void;
+  setNotes: (notes: Note[]) => void;
+  setCategories: (categories: CategoryItem[]) => void;
+
+  addTask: (task: Partial<Task>) => Promise<void>;
+  updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  removeTask: (id: string) => Promise<void>;
+  removeRoutineTasks: (routineId: string) => Promise<void>;
+  toggleTask: (id: string) => Promise<void>;
   
-  addCategory: (category: CategoryItem) => void;
-  updateCategory: (id: string, updates: Partial<CategoryItem>) => void;
-  removeCategory: (id: string) => void;
+  addCategory: (category: Partial<CategoryItem>) => Promise<void>;
+  updateCategory: (id: string, updates: Partial<CategoryItem>) => Promise<void>;
+  removeCategory: (id: string) => Promise<void>;
+
+  addNote: (note: Partial<Note>) => Promise<void>;
+  updateNote: (id: string, updates: Partial<Note>) => Promise<void>;
+  deleteNote: (id: string) => Promise<void>;
   
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 
   setSuggestions: (suggestions: Suggestion[]) => void;
-  acceptSuggestion: (suggestion: Suggestion) => void;
+  acceptSuggestion: (suggestion: Suggestion) => Promise<void>;
   rejectSuggestion: (id: string) => void;
 }
 
-const DEFAULT_CATEGORIES: CategoryItem[] = [
-  { id: "Work", label: "Work", color: "bg-blue-100 text-blue-700 border-blue-200" },
-  { id: "Personal", label: "Personal", color: "bg-green-100 text-green-700 border-green-200" },
-  { id: "Health", label: "Health", color: "bg-red-100 text-red-700 border-red-200" },
-  { id: "Social", label: "Social", color: "bg-purple-100 text-purple-700 border-purple-200" },
-  { id: "Other", label: "Other", color: "bg-gray-100 text-gray-700 border-gray-200" },
-];
-
 export const useStore = create<AppState>()(
-  persist(
-    (set) => ({
-      tasks: [],
-      suggestions: [],
-      categories: DEFAULT_CATEGORIES,
+  (set, get) => ({
+    tasks: [],
+    suggestions: [],
+    categories: [], // Categories now loaded from DB
+    notes: [],
 
-      addTask: (task) => set((state) => ({ 
-        tasks: [...state.tasks, task] 
-      })),
+    setTasks: (tasks) => set({ tasks }),
+    setNotes: (notes) => set({ notes }),
+    setCategories: (categories) => set({ categories }),
 
-      updateTask: (id, updates) => set((state) => ({
-        tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-      })),
+    addTask: async (task) => {
+      try {
+        const newTask = await createTask(task);
+        set((state) => ({
+          tasks: [...state.tasks, newTask]
+        }));
+      } catch (error) {
+        console.error("Failed to add task:", error);
+      }
+    },
 
-      removeTask: (id) => set((state) => ({
+    updateTask: async (id, updates) => {
+      // Optimistic update
+      set((state) => ({
+        tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates as Task } : t)),
+      }));
+      try {
+        await updateTask(id, updates);
+      } catch (error) {
+        console.error("Failed to update task:", error);
+        // Revert optimistic update if API call fails
+        // (Requires saving original state, more complex for this scope)
+      }
+    },
+
+    removeTask: async (id) => {
+      // Optimistic update
+      set((state) => ({
         tasks: state.tasks.filter((t) => t.id !== id),
-      })),
+      }));
+      try {
+        await deleteTask(id);
+      } catch (error) {
+        console.error("Failed to remove task:", error);
+        // Revert if API call fails
+      }
+    },
 
-      removeRoutineTasks: (routineId) => set((state) => ({
+    removeRoutineTasks: async (routineId) => {
+      // Optimistic update
+      set((state) => ({
         tasks: state.tasks.filter((t) => t.routineId !== routineId),
-      })),
+      }));
+      try {
+        await removeRoutineTasksAction(routineId);
+      } catch (error) {
+        console.error("Failed to remove routine tasks:", error);
+        // Revert if API call fails
+      }
+    },
 
-      toggleTask: (id) => set((state) => ({
+    toggleTask: async (id) => {
+      const taskToToggle = get().tasks.find(t => t.id === id);
+      if (!taskToToggle) return;
+      const newIsCompleted = !taskToToggle.isCompleted;
+
+      // Optimistic update
+      set((state) => ({
         tasks: state.tasks.map((t) => 
-          t.id === id ? { ...t, isCompleted: !t.isCompleted } : t
+          t.id === id ? { ...t, isCompleted: newIsCompleted } : t
         ),
-      })),
+      }));
+      try {
+        await updateTask(id, { isCompleted: newIsCompleted });
+      } catch (error) {
+        console.error("Failed to toggle task completion:", error);
+        // Revert if API call fails
+      }
+    },
 
-      addCategory: (category) => set((state) => ({
-        categories: [...state.categories, category]
-      })),
+    addCategory: async (category) => {
+      try {
+        const newCategory = await createCategory(category.label!, category.color!);
+        set((state) => ({
+          categories: [...state.categories, newCategory]
+        }));
+      } catch (error) {
+        console.error("Failed to add category:", error);
+      }
+    },
 
-      updateCategory: (id, updates) => set((state) => ({
-        categories: state.categories.map((c) => (c.id === id ? { ...c, ...updates } : c)),
-      })),
+    updateCategory: async (id, updates) => {
+      // Optimistic update
+      set((state) => ({
+        categories: state.categories.map((c) => (c.id === id ? { ...c, ...updates as CategoryItem } : c)),
+      }));
+      try {
+        await updateCategoryAction(id, updates);
+      } catch (error) {
+        console.error("Failed to update category:", error);
+      }
+    },
 
-      removeCategory: (id) => set((state) => ({
+    removeCategory: async (id) => {
+      // Optimistic update
+      set((state) => ({
         categories: state.categories.filter((c) => c.id !== id),
-      })),
+      }));
+      try {
+        await deleteCategory(id);
+      } catch (error) {
+        console.error("Failed to remove category:", error);
+      }
+    },
 
-      searchQuery: "",
-      setSearchQuery: (query) => set({ searchQuery: query }),
+    addNote: async (note) => {
+      try {
+        const newNote = await createNote(note.title!, note.content!);
+        set((state) => ({
+          notes: [newNote, ...(state.notes || [])]
+        }));
+      } catch (error) {
+        console.error("Failed to add note:", error);
+      }
+    },
 
-      setSuggestions: (suggestions) => set({ suggestions }),
+    updateNote: async (id, updates) => {
+      // Optimistic update
+      set((state) => ({
+        notes: (state.notes || []).map((n) => (n.id === id ? { ...n, ...updates as Note } : n)),
+      }));
+      try {
+        await updateNote(id, updates.title!, updates.content!); // Assuming title and content are always provided for updates
+      } catch (error) {
+        console.error("Failed to update note:", error);
+      }
+    },
 
-      acceptSuggestion: (suggestion) => set((state) => ({
-        tasks: [
-          ...state.tasks,
-          {
-            id: crypto.randomUUID(),
-            title: suggestion.title,
-            category: suggestion.category,
-            priority: "medium", // Default priority
-            subtasks: [],
-            date: suggestion.suggestedDate,
-            isCompleted: false,
-            reminderTime: undefined,
-            durationMinutes: suggestion.durationMinutes,
-          }
-        ],
-        suggestions: state.suggestions.filter(s => s.id !== suggestion.id)
-      })),
+    deleteNote: async (id) => {
+      // Optimistic update
+      set((state) => ({
+        notes: (state.notes || []).filter((n) => n.id !== id),
+      }));
+      try {
+        await deleteNote(id);
+      } catch (error) {
+        console.error("Failed to delete note:", error);
+      }
+    },
 
-      rejectSuggestion: (id) => set((state) => ({
-        suggestions: state.suggestions.filter(s => s.id !== id)
-      })),
-    }),
-    {
-      name: 'smart-planner-storage',
-    }
-  )
+    searchQuery: "",
+    setSearchQuery: (query) => set({ searchQuery: query }),
+
+    setSuggestions: (suggestions) => set({ suggestions }),
+
+    acceptSuggestion: async (suggestion) => {
+      try {
+        const acceptedTask = await createTask({
+          title: suggestion.title,
+          category: suggestion.category,
+          priority: "medium", // Default priority
+          subtasks: [],
+          date: new Date(suggestion.suggestedDate),
+          isCompleted: false,
+          reminderTime: undefined,
+          durationMinutes: suggestion.durationMinutes,
+        });
+        set((state) => ({
+          tasks: [...state.tasks, acceptedTask],
+          suggestions: state.suggestions.filter(s => s.id !== suggestion.id)
+        }));
+      } catch (error) {
+        console.error("Failed to accept suggestion:", error);
+      }
+    },
+
+    rejectSuggestion: (id) => set((state) => ({
+      suggestions: state.suggestions.filter(s => s.id !== id)
+    })),
+  })
 );

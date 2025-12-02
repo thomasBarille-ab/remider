@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Task {
+  id              String    @id @default(uuid())
+  title           String
+  userId          String    // Clerk User ID
+  category        String
+  priority        String
+  date            DateTime
+  isCompleted     Boolean   @default(false)
+  reminderTime    DateTime?
+  durationMinutes Int?
+  routineId       String?
+  isExternal      Boolean   @default(false)
+  source          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  subtasks        Subtask[]
+  
+  @@index([userId])
+}
+
+model Subtask {
+  id          String  @id @default(uuid())
+  title       String
+  isCompleted Boolean @default(false)
+  taskId      String
+  task        Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model Note {
+  id        String   @id @default(uuid())
+  userId    String   // Clerk User ID
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// User Settings/Categories (Optional: if we want custom categories per user)
+model Category {
+  id      String @id @default(uuid())
+  userId  String
+  label   String
+  color   String
+
+  @@index([userId])
+}
