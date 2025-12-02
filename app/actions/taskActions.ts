@@ -2,8 +2,24 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { Task, Subtask, Priority } from "@/types"; // We might need to adjust types to match Prisma return types if they differ slightly
+import { Task, Subtask, Priority } from "@/types";
 import { revalidatePath } from "next/cache";
+
+// Helper to ensure Prisma result matches Task interface exactly
+function serializeTask(prismaTask: any): Task {
+  return {
+    ...prismaTask,
+    date: new Date(prismaTask.date),
+    reminderTime: prismaTask.reminderTime ? new Date(prismaTask.reminderTime) : undefined,
+    priority: prismaTask.priority as Priority,
+    durationMinutes: prismaTask.durationMinutes ?? undefined,
+    routineId: prismaTask.routineId ?? undefined,
+    source: prismaTask.source ?? undefined,
+    isExternal: prismaTask.isExternal ?? false,
+    createdAt: new Date(prismaTask.createdAt),
+    updatedAt: new Date(prismaTask.updatedAt),
+  };
+}
 
 export async function getTasks() {
   const { userId } = await auth();
@@ -15,22 +31,13 @@ export async function getTasks() {
     orderBy: { date: 'asc' }
   });
 
-  // Explicitly cast 'priority' to 'Priority' type
-  const tasks: Task[] = prismaTasks.map(task => ({
-    ...task,
-    date: new Date(task.date),
-    reminderTime: task.reminderTime ? new Date(task.reminderTime) : undefined,
-    priority: task.priority as Priority, // Cast string from DB to Priority type
-  }));
-
-  return tasks;
+  return prismaTasks.map(serializeTask);
 }
 
 export async function createTask(task: Partial<Task>) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  // Format subtasks for Prisma create
   const subtasksData = task.subtasks?.map(s => ({
     title: s.title,
     isCompleted: s.isCompleted
@@ -42,10 +49,10 @@ export async function createTask(task: Partial<Task>) {
       userId,
       category: task.category!,
       priority: task.priority!,
-      date: new Date(task.date!), // Ensure ISO string is converted
+      date: new Date(task.date!),
       reminderTime: task.reminderTime ? new Date(task.reminderTime) : null,
-      durationMinutes: task.durationMinutes,
-      routineId: task.routineId,
+      durationMinutes: task.durationMinutes ?? null,
+      routineId: task.routineId ?? null,
       subtasks: {
         create: subtasksData
       }
@@ -54,17 +61,13 @@ export async function createTask(task: Partial<Task>) {
   });
 
   revalidatePath("/");
-  return newTask;
+  return serializeTask(newTask);
 }
 
 export async function updateTask(id: string, updates: Partial<Task>) {
   const { userId } = await auth();
   if (!userId) throw new Error("Unauthorized");
 
-  // Handle subtasks separately if needed, but for now simple updates
-  // For subtask updates, it's more complex (create, update, delete). 
-  // Simplified strategy: Update main fields. Subtask management might need dedicated actions if complex.
-  
   const updatedTask = await prisma.task.update({
     where: { id, userId },
     data: {
@@ -74,11 +77,13 @@ export async function updateTask(id: string, updates: Partial<Task>) {
       isCompleted: updates.isCompleted,
       date: updates.date ? new Date(updates.date) : undefined,
       durationMinutes: updates.durationMinutes,
-    }
+      // Note: we don't usually update subtasks here with this simplified logic
+    },
+    include: { subtasks: true }
   });
 
   revalidatePath("/");
-  return updatedTask;
+  return serializeTask(updatedTask);
 }
 
 export async function deleteTask(id: string) {
