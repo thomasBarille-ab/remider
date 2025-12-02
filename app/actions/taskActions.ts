@@ -2,18 +2,26 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { Task, Subtask } from "@/types"; // We might need to adjust types to match Prisma return types if they differ slightly
+import { Task, Subtask, Priority } from "@/types"; // We might need to adjust types to match Prisma return types if they differ slightly
 import { revalidatePath } from "next/cache";
 
 export async function getTasks() {
   const { userId } = await auth();
   if (!userId) return [];
 
-  const tasks = await prisma.task.findMany({
+  const prismaTasks = await prisma.task.findMany({
     where: { userId },
     include: { subtasks: true },
     orderBy: { date: 'asc' }
   });
+
+  // Explicitly cast 'priority' to 'Priority' type
+  const tasks: Task[] = prismaTasks.map(task => ({
+    ...task,
+    date: new Date(task.date),
+    reminderTime: task.reminderTime ? new Date(task.reminderTime) : undefined,
+    priority: task.priority as Priority, // Cast string from DB to Priority type
+  }));
 
   return tasks;
 }

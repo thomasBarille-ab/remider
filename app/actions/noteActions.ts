@@ -3,15 +3,26 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { Note } from "@/types";
 
-export async function getNotes() {
+export async function getNotes(): Promise<Note[]> {
   const { userId } = await auth();
   if (!userId) return [];
 
-  return await prisma.note.findMany({
+  const prismaNotes = await prisma.note.findMany({
     where: { userId },
     orderBy: { updatedAt: 'desc' }
   });
+
+  // Convert date strings to Date objects and ensure userId is present
+  const notes: Note[] = prismaNotes.map(note => ({
+    ...note,
+    userId,
+    createdAt: new Date(note.createdAt),
+    updatedAt: new Date(note.updatedAt),
+  }));
+
+  return notes;
 }
 
 export async function createNote(title: string, content: string) {
@@ -27,7 +38,8 @@ export async function createNote(title: string, content: string) {
   });
 
   revalidatePath("/");
-  return note;
+  // Ensure the returned note has Date objects for createdAt and updatedAt
+  return { ...note, createdAt: new Date(note.createdAt), updatedAt: new Date(note.updatedAt) };
 }
 
 export async function updateNote(id: string, title: string, content: string) {
@@ -43,7 +55,8 @@ export async function updateNote(id: string, title: string, content: string) {
   });
 
   revalidatePath("/");
-  return note;
+  // Ensure the returned note has Date objects for createdAt and updatedAt
+  return { ...note, createdAt: new Date(note.createdAt), updatedAt: new Date(note.updatedAt) };
 }
 
 export async function deleteNote(id: string) {

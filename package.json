@@ -6,10 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.35.5",
+    "@netlify/plugin-nextjs": "^5.15.1",
     "@prisma/client": "^5.10.2",
     "chrono-node": "^2.9.0",
     "clsx": "^2.1.1",
