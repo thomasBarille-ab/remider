@@ -22,7 +22,7 @@ export function NoteModal({ note, onClose }: NoteModalProps) {
     if (!title.trim() && !content.trim()) return onClose();
 
     if (note) {
-      await updateNote(note.id, title, content);
+      await updateNote(note.id, { title, content });
     } else {
       await addNote({
         title,
