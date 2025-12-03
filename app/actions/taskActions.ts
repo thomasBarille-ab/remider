@@ -22,16 +22,22 @@ function serializeTask(prismaTask: any): Task {
 }
 
 export async function getTasks() {
-  const { userId } = await auth();
-  if (!userId) return [];
+  try {
+    const { userId } = await auth();
+    if (!userId) return [];
 
-  const prismaTasks = await prisma.task.findMany({
-    where: { userId },
-    include: { subtasks: true },
-    orderBy: { date: 'asc' }
-  });
+    const prismaTasks = await prisma.task.findMany({
+      where: { userId },
+      include: { subtasks: true },
+      orderBy: { date: 'asc' }
+    });
 
-  return prismaTasks.map(serializeTask);
+    return prismaTasks.map(serializeTask);
+  } catch (error) {
+    console.error("Error fetching tasks:", error);
+    // Return empty array on error to prevent UI crash, but log it
+    return [];
+  }
 }
 
 export async function createTask(task: Partial<Task>) {
@@ -79,45 +85,60 @@ export async function createTask(task: Partial<Task>) {
 }
 
 export async function updateTask(id: string, updates: Partial<Task>) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
-  const updatedTask = await prisma.task.update({
-    where: { id, userId },
-    data: {
-      title: updates.title,
-      category: updates.category,
-      priority: updates.priority,
-      isCompleted: updates.isCompleted,
-      date: updates.date ? new Date(updates.date) : undefined,
-      durationMinutes: updates.durationMinutes,
-      // Note: we don't usually update subtasks here with this simplified logic
-    },
-    include: { subtasks: true }
-  });
+    const updatedTask = await prisma.task.update({
+      where: { id, userId },
+      data: {
+        title: updates.title,
+        category: updates.category,
+        priority: updates.priority,
+        isCompleted: updates.isCompleted,
+        date: updates.date ? new Date(updates.date) : undefined,
+        durationMinutes: updates.durationMinutes,
+        // Note: we don't usually update subtasks here with this simplified logic
+      },
+      include: { subtasks: true }
+    });
 
-  revalidatePath("/");
-  return serializeTask(updatedTask);
+    revalidatePath("/");
+    return serializeTask(updatedTask);
+  } catch (error) {
+    console.error("Error updating task:", error);
+    throw error;
+  }
 }
 
 export async function deleteTask(id: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
-  await prisma.task.delete({
-    where: { id, userId }
-  });
+    await prisma.task.delete({
+      where: { id, userId }
+    });
 
-  revalidatePath("/");
+    revalidatePath("/");
+  } catch (error) {
+    console.error("Error deleting task:", error);
+    throw error;
+  }
 }
 
 export async function removeRoutineTasks(routineId: string) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
-  await prisma.task.deleteMany({
-    where: { routineId, userId }
-  });
+    await prisma.task.deleteMany({
+      where: { routineId, userId }
+    });
 
-  revalidatePath("/");
+    revalidatePath("/");
+  } catch (error) {
+    console.error("Error removing routine tasks:", error);
+    throw error;
+  }
 }
