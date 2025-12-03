@@ -35,33 +35,47 @@ export async function getTasks() {
 }
 
 export async function createTask(task: Partial<Task>) {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
+  try {
+    const { userId } = await auth();
+    if (!userId) throw new Error("Unauthorized");
 
-  const subtasksData = task.subtasks?.map(s => ({
-    title: s.title,
-    isCompleted: s.isCompleted
-  })) || [];
+    if (!task.title || !task.date || !task.category || !task.priority) {
+      console.error("Missing required fields:", task);
+      throw new Error("Missing required fields");
+    }
 
-  const newTask = await prisma.task.create({
-    data: {
-      title: task.title!,
-      userId,
-      category: task.category!,
-      priority: task.priority!,
-      date: new Date(task.date!),
-      reminderTime: task.reminderTime ? new Date(task.reminderTime) : null,
-      durationMinutes: task.durationMinutes ?? null,
-      routineId: task.routineId ?? null,
-      subtasks: {
-        create: subtasksData
-      }
-    },
-    include: { subtasks: true }
-  });
+    const subtasksData = task.subtasks?.map(s => ({
+      title: s.title,
+      isCompleted: s.isCompleted
+    })) || [];
 
-  revalidatePath("/");
-  return serializeTask(newTask);
+    console.log("Creating task for user:", userId);
+    console.log("Task data:", JSON.stringify(task, null, 2));
+
+    const newTask = await prisma.task.create({
+      data: {
+        title: task.title!,
+        userId,
+        category: task.category!,
+        priority: task.priority!,
+        date: new Date(task.date!),
+        reminderTime: task.reminderTime ? new Date(task.reminderTime) : null,
+        durationMinutes: task.durationMinutes ?? null,
+        routineId: task.routineId ?? null,
+        subtasks: {
+          create: subtasksData
+        }
+      },
+      include: { subtasks: true }
+    });
+
+    console.log("Task created successfully:", newTask.id);
+    revalidatePath("/");
+    return serializeTask(newTask);
+  } catch (error) {
+    console.error("Error creating task:", error);
+    throw error;
+  }
 }
 
 export async function updateTask(id: string, updates: Partial<Task>) {
